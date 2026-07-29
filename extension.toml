@@ -1,0 +1,19 @@
+id = "glua"
+name = "GLua"
+version = "0.1.0"
+schema_version = 1
+authors = ["darkfated"]
+description = "GLua (Garry's Mod Lua) support with LuaJIT runtime and GMod API definitions."
+repository = "https://github.com/darkfated/zed-glua"
+
+[language_servers.lua-language-server]
+name = "LuaLS"
+languages = ["GLua", "EmmyLuadoc"]
+
+[grammars.lua]
+repository = "https://github.com/tree-sitter-grammars/tree-sitter-lua"
+commit = "10fe0054734eec83049514ea2e718b2a56acd0c9"
+
+[grammars.emmyluadoc]
+repository = "https://github.com/EmmyLuaLs/tree-sitter-emmyluadoc"
+commit = "ea755c0fd34c07e16597bd62a404d6eba2a3891e"
