@@ -1,7 +1,7 @@
 # zed-glua
 
 A [Zed](https://zed.dev/) extension that adds **GLua support** (Lua +
-Garry's Mod API).
+[Garry's Mod API](https://wiki.facepunch.com/gmod)).
 
 ## ✈️ Installation
 
