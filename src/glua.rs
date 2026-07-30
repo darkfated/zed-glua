@@ -3,27 +3,19 @@ use zed::settings::LspSettings;
 use zed::{serde_json, CodeLabel, LanguageServerId};
 use zed_extension_api::{self as zed, Result};
 
-mod fs_util;
 mod gmod;
-mod json;
 mod labels;
-mod lua_config;
-mod lua_ls_binary;
+mod lsp;
 mod settings;
+mod util;
 
-use gmod::GmodLibrary;
-use lua_ls_binary::LuaLsBinary;
-use settings::{get_extension_settings, Settings};
+use gmod::library::GmodLibrary;
+use lsp::server::LuaLsBinary;
+use settings::get_extension_settings;
 
 struct GluaExtension {
     lua_ls_binary: LuaLsBinary,
     gmod_library: GmodLibrary,
-}
-
-impl GluaExtension {
-    fn resolve_gmod_library_path(&mut self, settings: &Settings) -> Result<Option<String>> {
-        self.gmod_library.resolve(settings)
-    }
 }
 
 impl zed::Extension for GluaExtension {
@@ -50,7 +42,7 @@ impl zed::Extension for GluaExtension {
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
             );
-            self.resolve_gmod_library_path(&settings)?;
+            self.gmod_library.resolve(&settings)?;
         }
 
         let binary_path =
@@ -84,17 +76,17 @@ impl zed::Extension for GluaExtension {
         let lsp_settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         let mut settings = get_extension_settings(lsp_settings.settings)?;
 
-        lua_config::apply_gmod_lua_defaults(&mut settings.lua);
+        lsp::config::apply_gmod_lua_defaults(&mut settings.lua);
 
         let proj_root = worktree.root_path();
         let mut library_paths = Vec::with_capacity(settings.library.len() + 10);
 
-        if let Some(path) = self.resolve_gmod_library_path(&settings)? {
+        if let Some(path) = self.gmod_library.resolve(&settings)? {
             library_paths.push(path);
         }
 
         if settings.gmod.enabled && settings.gmod.auto_detect_addon {
-            let detected = lua_config::detect_gmod_addon_paths(&proj_root);
+            let detected = gmod::addon::detect_addon_paths(&proj_root);
             library_paths.extend(detected);
         }
 
@@ -106,7 +98,7 @@ impl zed::Extension for GluaExtension {
             }
         }));
 
-        lua_config::merge_library_paths(&mut settings.lua, library_paths);
+        lsp::config::merge_library_paths(&mut settings.lua, library_paths);
 
         Ok(Some(serde_json::json!({
             "Lua": settings.lua

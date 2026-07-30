@@ -1,7 +1,7 @@
-use crate::fs_util::is_dir_path;
 use crate::settings::Settings;
+use crate::util::fs;
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::fs as std_fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use zed_extension_api::{self as zed, Result};
@@ -12,7 +12,7 @@ const RELEASE_FILE: &str = "release.json";
 const RELEASE_CHECK_INTERVAL_SECS: u64 = 86_400;
 
 fn has_lua_files(path: &Path) -> bool {
-    let Ok(entries) = fs::read_dir(path) else {
+    let Ok(entries) = std_fs::read_dir(path) else {
         return false;
     };
 
@@ -30,7 +30,7 @@ fn has_lua_files(path: &Path) -> bool {
 }
 
 fn is_valid_library(path: &Path) -> bool {
-    is_dir_path(path) && has_lua_files(path)
+    path.is_dir() && has_lua_files(path)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,9 +48,7 @@ fn current_timestamp() -> u64 {
 
 fn read_release_cache(path: &Path) -> Option<ReleaseCache> {
     let file = path.join(RELEASE_FILE);
-
-    let content = fs::read_to_string(file).ok()?;
-
+    let content = std_fs::read_to_string(file).ok()?;
     serde_json::from_str(&content).ok()
 }
 
@@ -63,7 +61,7 @@ fn write_release_cache(path: &Path, release: &zed::GithubRelease) -> Result<()> 
     let content = serde_json::to_string_pretty(&cache)
         .map_err(|e| format!("failed to serialize release cache: {e}"))?;
 
-    fs::write(path.join(RELEASE_FILE), content)
+    std_fs::write(path.join(RELEASE_FILE), content)
         .map_err(|e| format!("failed to write release cache: {e}"))?;
 
     Ok(())
@@ -82,8 +80,8 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
 
     let temp_path = library_path.with_extension("tmp");
 
-    if is_dir_path(&temp_path) {
-        fs::remove_dir_all(&temp_path)
+    if fs::is_dir(&temp_path.to_string_lossy()) {
+        std_fs::remove_dir_all(&temp_path)
             .map_err(|e| format!("failed to remove temp library: {e}"))?;
     }
 
@@ -95,17 +93,17 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
     .map_err(|e| format!("failed to download GMod API library: {e}"))?;
 
     if !is_valid_library(&temp_path) {
-        let _ = fs::remove_dir_all(&temp_path);
-
+        let _ = std_fs::remove_dir_all(&temp_path);
         return Err("downloaded GMod API library validation failed".into());
     }
 
-    if is_dir_path(library_path) {
-        fs::remove_dir_all(library_path)
+    if fs::is_dir(library_path.to_string_lossy().as_ref()) {
+        std_fs::remove_dir_all(library_path)
             .map_err(|e| format!("failed to remove old library: {e}"))?;
     }
 
-    fs::rename(&temp_path, library_path).map_err(|e| format!("failed to replace library: {e}"))?;
+    std_fs::rename(&temp_path, library_path)
+        .map_err(|e| format!("failed to replace library: {e}"))?;
 
     write_release_cache(library_path, release)?;
 
@@ -128,12 +126,10 @@ fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
             },
         ) {
             Ok(release) => Some(release),
-
             Err(error) => {
                 if is_valid_library(&library_path) {
                     return Ok(library_path.to_string_lossy().into_owned());
                 }
-
                 return Err(format!("failed to check GMod API release: {error}"));
             }
         }
@@ -146,7 +142,6 @@ fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
             .as_ref()
             .map(|cache| cache.version != release.version)
             .unwrap_or(true),
-
         None => !is_valid_library(&library_path),
     };
 
@@ -165,6 +160,12 @@ fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
 
 pub struct GmodLibrary {
     cached_path: Option<String>,
+}
+
+impl Default for GmodLibrary {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GmodLibrary {

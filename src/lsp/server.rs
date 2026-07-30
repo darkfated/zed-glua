@@ -1,6 +1,6 @@
-use crate::fs_util;
 use crate::settings::BinarySettings;
-use std::fs;
+use crate::util::fs;
+use std::fs as std_fs;
 use zed_extension_api::{self as zed, LanguageServerId, Result};
 
 const LUA_LS_BINARY_DIR: &str = "lua-language-server-binaries";
@@ -31,6 +31,12 @@ pub struct LuaLsBinary {
     cached_binary_path: Option<String>,
 }
 
+impl Default for LuaLsBinary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LuaLsBinary {
     pub fn new() -> Self {
         Self {
@@ -45,7 +51,7 @@ impl LuaLsBinary {
         binary_settings: &BinarySettings,
     ) -> Result<String> {
         if let Some(path) = &binary_settings.path {
-            if !fs_util::is_file(path) {
+            if !fs::is_file(path) {
                 return Err(format!(
                     "configured lua-language-server binary path does not exist: {path}"
                 ));
@@ -55,12 +61,12 @@ impl LuaLsBinary {
 
         if !binary_settings.ignore_system_version {
             if let Some(path) = worktree.which("lua-language-server") {
-                return Ok(path);
+                return Ok(path.to_owned());
             }
         }
 
         if let Some(path) = &self.cached_binary_path {
-            if fs_util::is_file(path) {
+            if fs::is_file(path) {
                 return Ok(path.clone());
             }
         }
@@ -106,13 +112,13 @@ impl LuaLsBinary {
             exe_suffix(platform),
         );
 
-        if !fs_util::is_dir(LUA_LS_BINARY_DIR) {
-            fs::create_dir(LUA_LS_BINARY_DIR).map_err(|e| {
+        if !fs::is_dir(LUA_LS_BINARY_DIR) {
+            std_fs::create_dir(LUA_LS_BINARY_DIR).map_err(|e| {
                 format!("failed to create lua-language-server binary directory: {e}")
             })?;
         }
 
-        if !fs_util::is_file(&binary_path) {
+        if !fs::is_file(&binary_path) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
@@ -136,14 +142,14 @@ impl LuaLsBinary {
     }
 
     fn prune_old_versions(current_dir_name: &str) -> Result<()> {
-        let entries = fs::read_dir(LUA_LS_BINARY_DIR)
+        let entries = std_fs::read_dir(LUA_LS_BINARY_DIR)
             .map_err(|e| format!("failed to list lua-language-server binary directory: {e}"))?;
 
         for entry in entries {
             let entry = entry
                 .map_err(|e| format!("failed to load lua-language-server binary entry: {e}"))?;
             if entry.file_name().to_str() != Some(current_dir_name) {
-                let _ = fs::remove_dir_all(entry.path());
+                let _ = std_fs::remove_dir_all(entry.path());
             }
         }
 
