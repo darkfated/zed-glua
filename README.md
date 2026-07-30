@@ -2,6 +2,22 @@
 
 A [Zed](https://zed.dev/) extension that adds **GLua support** (Lua + [Garry's Mod API](https://wiki.facepunch.com/gmod)).
 
+## 🍷 Features
+
+- **Auto Complete** - type `play` and you already see `player.GetAll()`, `player.GetByID()`.
+- **Go to Definition** - click on a function and jump to its declaration.
+- **Find References** - on a hovered function, select the option and see every place it was called.
+- **Rename Symbol** - rename a variable and it changes everywhere in the project.
+- **Hover** - hover over a text object and get all available information about it.
+- **Diagnostics** - errors and warnings right in the code, such as unknown variables and unused function fields.
+- **Auto-detect Addon API** - adds global variables from your addon into a unified knowledge base, so you can use functions and variables from other addons.
+- **Syntax Highlighting** - full Lua highlighting plus 200+ variables from Garry's Mod.
+- **Code Outline** - on a separate panel, see all functions and variables with their nesting level.
+- **EmmyLua Doc** - annotations and type definitions, similar to TypeScript, for convenient documentation.
+- **Data Transparency** - on hover, display constant variable values and their types.
+- **Auto-Format** - excellent formatting on save thanks to EmmyLuaCodeStyle.
+- **And many other improvements.**
+
 ## 📦 Installation
 
 To install zed-glua, you can use the **Extension menu** in Zed, or clone the repository and install it as a dev extension with `zed: install dev extension`.
