@@ -43,22 +43,12 @@ impl Default for GmodSettings {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct BinarySettings {
     pub ignore_system_version: bool,
     pub path: Option<String>,
     pub args: Vec<String>,
-}
-
-impl Default for BinarySettings {
-    fn default() -> Self {
-        Self {
-            ignore_system_version: false,
-            path: None,
-            args: Vec::new(),
-        }
-    }
 }
 
 pub fn get_extension_settings(settings_val: Option<Value>) -> Result<Settings> {
@@ -79,14 +69,14 @@ fn normalize_settings_shape(mut settings_val: Value) -> Result<Value> {
     let lua_settings = settings.remove("Lua");
     let ext_settings = settings.remove("ext");
 
-    let mut value = ext_settings.unwrap_or(settings_val);
+    let mut normalized = ext_settings.unwrap_or(settings_val);
 
-    if let Value::Object(o) = &mut value {
-        o.insert(
+    if let Value::Object(ref mut obj) = normalized {
+        obj.insert(
             "Lua".to_string(),
-            lua_settings.unwrap_or(Value::Object(Map::new())),
+            lua_settings.unwrap_or_else(|| Value::Object(Map::new())),
         );
     }
 
-    Ok(value)
+    Ok(normalized)
 }

@@ -1,4 +1,4 @@
-use crate::fs_util::{is_dir, is_file};
+use crate::fs_util;
 use crate::settings::BinarySettings;
 use std::fs;
 use zed_extension_api::{self as zed, LanguageServerId, Result};
@@ -45,7 +45,7 @@ impl LuaLsBinary {
         binary_settings: &BinarySettings,
     ) -> Result<String> {
         if let Some(path) = &binary_settings.path {
-            if !is_file(path) {
+            if !fs_util::is_file(path) {
                 return Err(format!(
                     "configured lua-language-server binary path does not exist: {path}"
                 ));
@@ -60,7 +60,7 @@ impl LuaLsBinary {
         }
 
         if let Some(path) = &self.cached_binary_path {
-            if is_file(path) {
+            if fs_util::is_file(path) {
                 return Ok(path.clone());
             }
         }
@@ -106,13 +106,13 @@ impl LuaLsBinary {
             exe_suffix(platform),
         );
 
-        if !is_dir(LUA_LS_BINARY_DIR) {
+        if !fs_util::is_dir(LUA_LS_BINARY_DIR) {
             fs::create_dir(LUA_LS_BINARY_DIR).map_err(|e| {
                 format!("failed to create lua-language-server binary directory: {e}")
             })?;
         }
 
-        if !is_file(&binary_path) {
+        if !fs_util::is_file(&binary_path) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,

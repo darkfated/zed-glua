@@ -1,3 +1,4 @@
+use crate::fs_util::is_dir_path;
 use crate::settings::Settings;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -6,16 +7,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use zed_extension_api::{self as zed, Result};
 
 const GMOD_API_REPO: &str = "luttje/glua-api-snippets";
-pub const LIBRARY_DIR: &str = "garrysmod-library";
-
+const LIBRARY_DIR: &str = "garrysmod-library";
 const RELEASE_FILE: &str = "release.json";
-const RELEASE_CHECK_INTERVAL: u64 = 60 * 60 * 24;
+const RELEASE_CHECK_INTERVAL_SECS: u64 = 86_400;
 
-fn is_dir(path: impl AsRef<Path>) -> bool {
-    path.as_ref().is_dir()
-}
-
-fn has_lua_files(path: impl AsRef<Path>) -> bool {
+fn has_lua_files(path: &Path) -> bool {
     let Ok(entries) = fs::read_dir(path) else {
         return false;
     };
@@ -34,7 +30,7 @@ fn has_lua_files(path: impl AsRef<Path>) -> bool {
 }
 
 fn is_valid_library(path: &Path) -> bool {
-    is_dir(path) && has_lua_files(path)
+    is_dir_path(path) && has_lua_files(path)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,7 +70,7 @@ fn write_release_cache(path: &Path, release: &zed::GithubRelease) -> Result<()> 
 }
 
 fn release_check_expired(cache: &ReleaseCache) -> bool {
-    current_timestamp().saturating_sub(cache.checked) >= RELEASE_CHECK_INTERVAL
+    current_timestamp().saturating_sub(cache.checked) >= RELEASE_CHECK_INTERVAL_SECS
 }
 
 fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result<()> {
@@ -86,7 +82,7 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
 
     let temp_path = library_path.with_extension("tmp");
 
-    if is_dir(&temp_path) {
+    if is_dir_path(&temp_path) {
         fs::remove_dir_all(&temp_path)
             .map_err(|e| format!("failed to remove temp library: {e}"))?;
     }
@@ -104,7 +100,7 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
         return Err("downloaded GMod API library validation failed".into());
     }
 
-    if is_dir(library_path) {
+    if is_dir_path(library_path) {
         fs::remove_dir_all(library_path)
             .map_err(|e| format!("failed to remove old library: {e}"))?;
     }

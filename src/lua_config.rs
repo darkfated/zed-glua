@@ -1,8 +1,18 @@
-use crate::json;
 use std::collections::HashSet;
+
 use zed_extension_api::serde_json::{Map, Value};
 
-const NONSTANDARD_SYMBOLS: [&str; 7] = ["!", "!=", "&&", "||", "//", "/**/", "continue"];
+use crate::json;
+
+const NONSTANDARD_SYMBOLS: &[&str] = &["!=", "&&", "||", "//", "/**/", "continue", "!"];
+
+const GMOD_DIAGNOSTIC_DISABLES: &[&str] = &[
+    "duplicate-set-field",
+    "lowercase-global",
+    "undefined-field",
+    "undefined-global",
+    "unused-local",
+];
 
 fn push_unique(array: &mut Vec<Value>, value: &str) {
     if !array.iter().any(|item| item.as_str() == Some(value)) {
@@ -15,6 +25,9 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
     runtime
         .entry("version".to_string())
         .or_insert_with(|| Value::String("LuaJIT".into()));
+    runtime
+        .entry("unicodeName".to_string())
+        .or_insert_with(|| Value::Bool(true));
 
     let special = json::get_or_insert_object(runtime, "special");
     special
@@ -31,7 +44,65 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
 
     let diagnostics = json::get_or_insert_object(lua, "diagnostics");
     let disabled = json::get_or_insert_array(diagnostics, "disable");
-    push_unique(disabled, "duplicate-set-field");
+    for diag in GMOD_DIAGNOSTIC_DISABLES {
+        push_unique(disabled, diag);
+    }
+
+    let completion = json::get_or_insert_object(lua, "completion");
+    completion
+        .entry("autoRequire".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    completion
+        .entry("displayParameter".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    completion
+        .entry("callSnippet".to_string())
+        .or_insert_with(|| Value::String("Replace".into()));
+
+    let hover = json::get_or_insert_object(lua, "hover");
+    hover
+        .entry("viewString".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    hover
+        .entry("viewNumber".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    hover
+        .entry("fieldInHover".to_string())
+        .or_insert_with(|| Value::Bool(true));
+
+    let semantic = json::get_or_insert_object(lua, "semantic");
+    semantic
+        .entry("enable".to_string())
+        .or_insert_with(|| Value::Bool(true));
+
+    let hints = json::get_or_insert_object(lua, "hints");
+    hints
+        .entry("awaitArgType".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    hints
+        .entry("paramName".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    hints
+        .entry("paramType".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    hints
+        .entry("returnType".to_string())
+        .or_insert_with(|| Value::Bool(true));
+
+    let format = json::get_or_insert_object(lua, "format");
+    format
+        .entry("enable".to_string())
+        .or_insert_with(|| Value::Bool(true));
+
+    let signature = json::get_or_insert_object(lua, "signatureHelp");
+    signature
+        .entry("enable".to_string())
+        .or_insert_with(|| Value::Bool(true));
+
+    let workspace = json::get_or_insert_object(lua, "workspace");
+    workspace
+        .entry("checkThirdParty".to_string())
+        .or_insert_with(|| Value::Bool(false));
 }
 
 pub fn merge_library_paths(

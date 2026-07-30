@@ -1,3 +1,4 @@
+; Statement blocks
 (if_statement
   "end" @end) @indent
 
@@ -16,16 +17,17 @@
 (function_declaration
   "end" @end) @indent
 
-(function_definition
-  "end" @end) @indent
+; Table constructors
+(table_constructor
+  [
+    "{"
+    "}"
+  ] @end) @indent
 
+; Bracket pairs
 (_
   "["
   "]" @end) @indent
-
-(_
-  "{"
-  "}" @end) @indent
 
 (_
   "("
