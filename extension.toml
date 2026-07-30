@@ -2,8 +2,8 @@ id = "glua"
 name = "GLua"
 version = "0.1.0"
 schema_version = 1
-authors = ["darkfated"]
-description = "GLua (Garry's Mod Lua) support with LuaJIT runtime and GMod API definitions."
+authors = ["darkfated <darkfated@icloud.com>"]
+description = "GLua (Garry's Mod Lua) support."
 repository = "https://github.com/darkfated/zed-glua"
 
 [language_servers.lua-language-server]
