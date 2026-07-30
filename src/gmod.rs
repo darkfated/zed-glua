@@ -1,3 +1,4 @@
+use crate::settings::Settings;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -76,7 +77,7 @@ fn release_check_expired(cache: &ReleaseCache) -> bool {
     current_timestamp().saturating_sub(cache.checked) >= RELEASE_CHECK_INTERVAL
 }
 
-pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result<()> {
+fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result<()> {
     let asset = release
         .assets
         .iter()
@@ -115,7 +116,7 @@ pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Re
     Ok(())
 }
 
-pub fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
+fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
     let library_path = Path::new(current_dir).join(LIBRARY_DIR);
 
     let cache = read_release_cache(&library_path);
@@ -164,4 +165,43 @@ pub fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
     }
 
     Ok(library_path.to_string_lossy().into_owned())
+}
+
+pub struct GmodLibrary {
+    cached_path: Option<String>,
+}
+
+impl GmodLibrary {
+    pub fn new() -> Self {
+        Self { cached_path: None }
+    }
+
+    pub fn resolve(&mut self, settings: &Settings) -> Result<Option<String>> {
+        if !settings.gmod.enabled {
+            return Ok(None);
+        }
+
+        if let Some(path) = &settings.gmod.library_path {
+            return Ok(Some(path.clone()));
+        }
+
+        if !settings.gmod.download_library {
+            return Ok(None);
+        }
+
+        if !settings.gmod.refresh_library {
+            if let Some(path) = &self.cached_path {
+                return Ok(Some(path.clone()));
+            }
+        }
+
+        let current_dir = std::env::current_dir()
+            .map_err(|e| format!("failed to get extension working directory: {e}"))?;
+        let current_dir_str = current_dir.display().to_string();
+
+        let library_path = ensure_library(&current_dir_str, settings.gmod.refresh_library)?;
+
+        self.cached_path = Some(library_path.clone());
+        Ok(Some(library_path))
+    }
 }

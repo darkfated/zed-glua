@@ -37,7 +37,7 @@ impl Default for GmodSettings {
         Self {
             enabled: true,
             download_library: true,
-            refresh_library: true,
+            refresh_library: false,
             library_path: None,
         }
     }
@@ -62,16 +62,25 @@ impl Default for BinarySettings {
 }
 
 pub fn get_extension_settings(settings_val: Option<Value>) -> Result<Settings> {
-    let Some(mut settings_val) = settings_val else {
+    let Some(settings_val) = settings_val else {
         return Ok(Settings::default());
     };
 
+    let value = normalize_settings_shape(settings_val)?;
+
+    serde_path_to_error::deserialize(value).map_err(|e| e.to_string())
+}
+
+fn normalize_settings_shape(mut settings_val: Value) -> Result<Value> {
     let Some(settings) = settings_val.as_object_mut() else {
         return Err("invalid lua-language-server settings: `settings` must be an object".into());
     };
 
     let lua_settings = settings.remove("Lua");
-    let mut value = settings.remove("ext").unwrap_or(settings_val);
+    let ext_settings = settings.remove("ext");
+
+    let mut value = ext_settings.unwrap_or(settings_val);
+
     if let Value::Object(o) = &mut value {
         o.insert(
             "Lua".to_string(),
@@ -79,5 +88,5 @@ pub fn get_extension_settings(settings_val: Option<Value>) -> Result<Settings> {
         );
     }
 
-    serde_path_to_error::deserialize(value).map_err(|e| e.to_string())
+    Ok(value)
 }

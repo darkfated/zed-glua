@@ -20,16 +20,18 @@ This extension can be configured via your Zed `settings.json`. The default confi
                     // Enable GMod support.
                     "enabled": true,
                     "download_library": true,
-                    // Check for API updates on startup.
-                    "refresh_library": true,
-                    // Custom path to the API library, if a specific save location is required.
+                    // Check for API updates on startup. If disabled, check
+                    // automatically once a day.
+                    "refresh_library": false,
+                    // Custom path to the API library, if a specific save location
+                    // is required.
                     "library_path": null,
                 },
                 "binary": {
                     // Do not use system lua-language-server.
                     "ignore_system_version": false,
-                    // The path to the language server binary you want to force the extension
-                    // to use.
+                    // The path to the language server binary you want to force
+                    // the extension to use.
                     "path": null,
                     // Additional arguments to pass to the language server.
                     "args": [],

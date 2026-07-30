@@ -45,6 +45,11 @@ impl LuaLsBinary {
         binary_settings: &BinarySettings,
     ) -> Result<String> {
         if let Some(path) = &binary_settings.path {
+            if !is_file(path) {
+                return Err(format!(
+                    "configured lua-language-server binary path does not exist: {path}"
+                ));
+            }
             return Ok(path.clone());
         }
 

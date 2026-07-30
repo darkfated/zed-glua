@@ -11,42 +11,18 @@ mod lua_config;
 mod lua_ls_binary;
 mod settings;
 
+use gmod::GmodLibrary;
 use lua_ls_binary::LuaLsBinary;
 use settings::{get_extension_settings, Settings};
 
 struct GluaExtension {
     lua_ls_binary: LuaLsBinary,
-    resolved_gmod_library_path: Option<String>,
+    gmod_library: GmodLibrary,
 }
 
 impl GluaExtension {
     fn resolve_gmod_library_path(&mut self, settings: &Settings) -> Result<Option<String>> {
-        if !settings.gmod.enabled {
-            return Ok(None);
-        }
-
-        if let Some(path) = &settings.gmod.library_path {
-            return Ok(Some(path.clone()));
-        }
-
-        if !settings.gmod.download_library {
-            return Ok(None);
-        }
-
-        if !settings.gmod.refresh_library {
-            if let Some(path) = &self.resolved_gmod_library_path {
-                return Ok(Some(path.clone()));
-            }
-        }
-
-        let current_dir = std::env::current_dir()
-            .map_err(|e| format!("failed to get extension working directory: {e}"))?;
-        let current_dir_str = current_dir.display().to_string();
-
-        let library_path = gmod::ensure_library(&current_dir_str, settings.gmod.refresh_library)?;
-
-        self.resolved_gmod_library_path = Some(library_path.clone());
-        Ok(Some(library_path))
+        self.gmod_library.resolve(settings)
     }
 }
 
@@ -54,7 +30,7 @@ impl zed::Extension for GluaExtension {
     fn new() -> Self {
         Self {
             lua_ls_binary: LuaLsBinary::new(),
-            resolved_gmod_library_path: None,
+            gmod_library: GmodLibrary::new(),
         }
     }
 
