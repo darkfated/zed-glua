@@ -222,20 +222,6 @@
 (diagnostic_list
   (identifier) @constant)
 
-; -- Attributes --
-(attribute_use
-  "@" @punctuation.bracket)
-
-(attribute_use_item
-  name: (identifier) @function.macro)
-
-(attribute_use_item
-  args: (attribute_args
-    (attribute_arg) @variable))
-
-(attribute_annotation
-  name: (identifier) @function.macro)
-
 ; -- Module --
 (module_annotation
   name: (string) @module)
