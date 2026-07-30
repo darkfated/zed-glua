@@ -26,6 +26,8 @@ This extension can be configured via your Zed `settings.json`. The default confi
                     "library_path": null,
                 },
                 "binary": {
+                    // Do not use system lua-language-server.
+                    "ignore_system_version": false,
                     // The path to the language server binary you want to force the extension
                     // to use.
                     "path": null,
