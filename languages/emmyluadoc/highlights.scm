@@ -1,50 +1,6 @@
 ; Comment prefix
 (comment_prefix) @comment
 
-; -- Annotation keywords --
-
-; Core annotations
-(class_annotation "@" @keyword) @type.definition
-(field_annotation "@" @keyword)
-(type_annotation "@" @keyword)
-(param_annotation "@" @keyword)
-(return_annotation "@" @keyword)
-(generic_annotation "@" @keyword)
-(overload_annotation "@" @keyword)
-(deprecated_annotation "@" @keyword)
-(see_annotation "@" @keyword)
-(alias_annotation "@" @keyword) @type.definition
-(enum_annotation "@" @keyword) @type.definition
-(module_annotation "@" @keyword)
-(cast_annotation "@" @keyword)
-(operator_annotation "@" @keyword)
-(namespace_annotation "@" @keyword)
-(using_annotation "@" @keyword)
-(attribute_annotation "@" @keyword)
-
-; Visibility annotations
-(private_annotation "@" @keyword.modifier)
-(protected_annotation "@" @keyword.modifier)
-(public_annotation "@" @keyword.modifier)
-(package_annotation "@" @keyword.modifier)
-
-; Modifier annotations
-(async_annotation "@" @keyword)
-(nodiscard_annotation "@" @keyword)
-(meta_annotation "@" @keyword)
-(readonly_annotation "@" @keyword)
-(export_annotation "@" @keyword)
-
-; Directive annotations
-(diagnostic_annotation "@" @keyword.directive)
-(source_annotation "@" @keyword)
-(version_annotation "@" @keyword)
-(language_annotation "@" @keyword)
-(as_annotation "@" @keyword)
-
-; Unknown annotations
-(tag_name) @keyword
-
 ; -- Visibility modifiers --
 [
   "public"
