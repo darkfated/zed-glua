@@ -76,11 +76,7 @@
   type: (type) @type)
 
 ; -- Return annotations --
-(return_annotation
-  type: (return_type_annotation) @type)
-
-(return_annotation
-  description: (description) @comment)
+(return_annotation) @comment
 
 ; -- Generics --
 (generic_annotation
