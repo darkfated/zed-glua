@@ -6,12 +6,17 @@ use crate::json;
 
 const NONSTANDARD_SYMBOLS: &[&str] = &["!=", "&&", "||", "//", "/**/", "continue", "!"];
 
-const GMOD_DIAGNOSTIC_DISABLES: &[&str] = &[
-    "duplicate-set-field",
-    "lowercase-global",
+const GMOD_DIAGNOSTIC_DISABLES: &[&str] = &["duplicate-set-field", "lowercase-global"];
+
+const GMOD_DIAGNOSTIC_WARNINGS: &[&str] = &[
     "undefined-field",
     "undefined-global",
     "unused-local",
+    "unused-function",
+    "redundant-parameter",
+    "cast-local-type",
+    "param-type-mismatch",
+    "return-type-mismatch",
 ];
 
 fn push_unique(array: &mut Vec<Value>, value: &str) {
@@ -48,6 +53,21 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
         push_unique(disabled, diag);
     }
 
+    let severity = json::get_or_insert_object(diagnostics, "severity");
+    for diag in GMOD_DIAGNOSTIC_WARNINGS {
+        severity
+            .entry(diag.to_string())
+            .or_insert_with(|| Value::String("Warning".into()));
+    }
+
+    let group_severity = json::get_or_insert_object(diagnostics, "groupSeverity");
+    group_severity
+        .entry("undefined".to_string())
+        .or_insert_with(|| Value::String("Warning".into()));
+    group_severity
+        .entry("unused".to_string())
+        .or_insert_with(|| Value::String("Hint".into()));
+
     let completion = json::get_or_insert_object(lua, "completion");
     completion
         .entry("autoRequire".to_string())
@@ -58,6 +78,12 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
     completion
         .entry("callSnippet".to_string())
         .or_insert_with(|| Value::String("Replace".into()));
+    completion
+        .entry("showParams".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    completion
+        .entry("postfix".to_string())
+        .or_insert_with(|| Value::String("@".into()));
 
     let hover = json::get_or_insert_object(lua, "hover");
     hover
@@ -68,6 +94,9 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
         .or_insert_with(|| Value::Bool(true));
     hover
         .entry("fieldInHover".to_string())
+        .or_insert_with(|| Value::Bool(true));
+    hover
+        .entry("preview".to_string())
         .or_insert_with(|| Value::Bool(true));
 
     let semantic = json::get_or_insert_object(lua, "semantic");
@@ -88,6 +117,9 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
     hints
         .entry("returnType".to_string())
         .or_insert_with(|| Value::Bool(true));
+    hints
+        .entry("enumEnumValues".to_string())
+        .or_insert_with(|| Value::Bool(true));
 
     let format = json::get_or_insert_object(lua, "format");
     format
@@ -103,6 +135,41 @@ pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
     workspace
         .entry("checkThirdParty".to_string())
         .or_insert_with(|| Value::Bool(false));
+    workspace
+        .entry("library".to_string())
+        .or_insert_with(|| Value::Array(Vec::new()));
+}
+
+pub fn detect_gmod_addon_paths(worktree_root: &str) -> Vec<String> {
+    let root = std::path::Path::new(worktree_root);
+    let lua_dir = root.join("lua");
+
+    if !lua_dir.is_dir() {
+        return Vec::new();
+    }
+
+    let mut dirs = Vec::new();
+    let mut stack = vec![lua_dir.clone()];
+
+    while let Some(current) = stack.pop() {
+        if !current.is_dir() {
+            continue;
+        }
+
+        if current != lua_dir {
+            dirs.push(current.to_string_lossy().replace('\\', "/"));
+        }
+
+        if let Ok(entries) = std::fs::read_dir(&current) {
+            for entry in entries.flatten() {
+                if entry.file_type().is_ok_and(|ft| ft.is_dir()) {
+                    stack.push(entry.path());
+                }
+            }
+        }
+    }
+
+    dirs
 }
 
 pub fn merge_library_paths(

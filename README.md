@@ -26,6 +26,9 @@ This extension can be configured via your Zed `settings.json`. The default confi
                 // Custom path to the API library, if a specific save location
                 // is required.
                 "library_path": null,
+                // Auto-detect GMod addon directory structure
+                // (lua/autorun/, lua/entities/, etc.)
+                "auto_detect_addon": true,
             },
             "binary": {
                 // Do not use system lua-language-server.

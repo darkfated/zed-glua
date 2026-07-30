@@ -86,18 +86,23 @@ impl zed::Extension for GluaExtension {
 
         lua_config::apply_gmod_lua_defaults(&mut settings.lua);
 
-        let mut library_paths = Vec::with_capacity(settings.library.len() + 1);
+        let proj_root = worktree.root_path();
+        let mut library_paths = Vec::with_capacity(settings.library.len() + 10);
 
         if let Some(path) = self.resolve_gmod_library_path(&settings)? {
             library_paths.push(path);
         }
 
-        let proj_root = format!("{}/", worktree.root_path());
+        if settings.gmod.enabled && settings.gmod.auto_detect_addon {
+            let detected = lua_config::detect_gmod_addon_paths(&proj_root);
+            library_paths.extend(detected);
+        }
+
         library_paths.extend(settings.library.iter().map(|path| {
             if Path::new(path).is_absolute() {
                 path.clone()
             } else {
-                format!("{proj_root}{path}")
+                format!("{proj_root}/{path}")
             }
         }));
 

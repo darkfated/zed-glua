@@ -30,6 +30,7 @@ pub struct GmodSettings {
     pub download_library: bool,
     pub refresh_library: bool,
     pub library_path: Option<String>,
+    pub auto_detect_addon: bool,
 }
 
 impl Default for GmodSettings {
@@ -39,6 +40,7 @@ impl Default for GmodSettings {
             download_library: true,
             refresh_library: false,
             library_path: None,
+            auto_detect_addon: true,
         }
     }
 }
