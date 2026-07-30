@@ -4,7 +4,13 @@ use zed_extension_api::serde_json::{Map, Value};
 
 const NONSTANDARD_SYMBOLS: [&str; 7] = ["!", "!=", "&&", "||", "//", "/**/", "continue"];
 
-pub fn apply_gmod_defaults(lua: &mut Map<String, Value>) {
+fn push_unique(array: &mut Vec<Value>, value: &str) {
+    if !array.iter().any(|item| item.as_str() == Some(value)) {
+        array.push(Value::String(value.into()));
+    }
+}
+
+pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
     let runtime = json::get_or_insert_object(lua, "runtime");
     runtime
         .entry("version".to_string())
@@ -20,19 +26,12 @@ pub fn apply_gmod_defaults(lua: &mut Map<String, Value>) {
 
     let symbols = json::get_or_insert_array(runtime, "nonstandardSymbol");
     for symbol in NONSTANDARD_SYMBOLS {
-        if !symbols.iter().any(|value| value.as_str() == Some(symbol)) {
-            symbols.push(Value::String(symbol.into()));
-        }
+        push_unique(symbols, symbol);
     }
 
     let diagnostics = json::get_or_insert_object(lua, "diagnostics");
     let disabled = json::get_or_insert_array(diagnostics, "disable");
-    if !disabled
-        .iter()
-        .any(|value| value.as_str() == Some("duplicate-set-field"))
-    {
-        disabled.push(Value::String("duplicate-set-field".into()));
-    }
+    push_unique(disabled, "duplicate-set-field");
 }
 
 pub fn merge_library_paths(
@@ -48,8 +47,7 @@ pub fn merge_library_paths(
         .collect();
 
     for path in library_paths {
-        if !seen.contains(&path) {
-            seen.insert(path.clone());
+        if seen.insert(path.clone()) {
             libraries.push(Value::String(path));
         }
     }

@@ -84,7 +84,7 @@ impl zed::Extension for GluaExtension {
         let lsp_settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?;
         let mut settings = get_extension_settings(lsp_settings.settings)?;
 
-        lua_config::apply_gmod_defaults(&mut settings.lua);
+        lua_config::apply_gmod_lua_defaults(&mut settings.lua);
 
         let mut library_paths = Vec::with_capacity(settings.library.len() + 1);
 

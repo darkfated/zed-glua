@@ -12,33 +12,41 @@ To install zed-glua, you can use the extension menu in Zed, or clone the reposit
 This extension can be configured via your Zed `settings.json`. The default configuration looks like this:
 
 ```jsonc
-{
-    "lsp": {
-        "lua-language-server": {
-            "settings": {
-                "gmod": {
-                    // Enable GMod support.
-                    "enabled": true,
-                    "download_library": true,
-                    // Check for API updates on startup. If disabled, check
-                    // automatically once a day.
-                    "refresh_library": false,
-                    // Custom path to the API library, if a specific save location
-                    // is required.
-                    "library_path": null,
-                },
-                "binary": {
-                    // Do not use system lua-language-server.
-                    "ignore_system_version": false,
-                    // The path to the language server binary you want to force
-                    // the extension to use.
-                    "path": null,
-                    // Additional arguments to pass to the language server.
-                    "args": [],
-                },
+"lsp": {
+    "lua-language-server": {
+        "settings": {
+            "gmod": {
+                // Enable GMod support.
+                "enabled": true,
+                "download_library": true,
+                // Check for API updates on startup. If disabled, check
+                // automatically once a day.
+                "refresh_library": false,
+                // Custom path to the API library, if a specific save location
+                // is required.
+                "library_path": null,
+            },
+            "binary": {
+                // Do not use system lua-language-server.
+                "ignore_system_version": false,
+                // The path to the language server binary you want to force
+                // the extension to use.
+                "path": null,
+                // Additional arguments to pass to the language server.
+                "args": [],
             },
         },
     },
+}
+```
+
+**The language may conflict with the default Lua language configuration**. To resolve this issue, set GLua as the default language for `*.lua` files:
+
+```jsonc
+"file_types": {
+    "GLua": [
+        "lua"
+    ]
 }
 ```
 
@@ -52,6 +60,7 @@ cargo build --release
 ```
 
 ## 🔐 License
+
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 Copyright (C) 2026 darkfated.
