@@ -27,7 +27,24 @@ fn has_lua_files(path: impl AsRef<Path>) -> bool {
     false
 }
 
-pub fn download_library(library_path: &Path) -> Result<()> {
+fn get_library_version(path: &Path) -> Option<String> {
+    let version_file = path.join(".version");
+
+    fs::read_to_string(version_file)
+        .ok()
+        .map(|version| version.trim().to_string())
+}
+
+fn set_library_version(path: &Path, version: &str) -> Result<()> {
+    let version_file = path.join(".version");
+
+    fs::write(version_file, version)
+        .map_err(|e| format!("failed to write library version: {e}"))?;
+
+    Ok(())
+}
+
+pub fn download_library(library_path: &Path, version: &str) -> Result<()> {
     let release = zed::latest_github_release(
         GMOD_API_REPO,
         zed::GithubReleaseOptions {
@@ -54,6 +71,8 @@ pub fn download_library(library_path: &Path) -> Result<()> {
     )
     .map_err(|e| format!("failed to download GMod API library: {e}"))?;
 
+    set_library_version(library_path, version)?;
+
     Ok(())
 }
 
@@ -65,8 +84,21 @@ pub fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
             .map_err(|e| format!("failed to remove old GMod library: {e}"))?;
     }
 
-    if !has_lua_files(&library_path) {
-        download_library(&library_path)?;
+    let release = zed::latest_github_release(
+        GMOD_API_REPO,
+        zed::GithubReleaseOptions {
+            require_assets: true,
+            pre_release: false,
+        },
+    )?;
+
+    let current_version = get_library_version(&library_path);
+
+    let needs_update =
+        !has_lua_files(&library_path) || current_version.as_deref() != Some(&release.version);
+
+    if needs_update {
+        download_library(&library_path, &release.version)?;
     }
 
     if !has_lua_files(&library_path) {
