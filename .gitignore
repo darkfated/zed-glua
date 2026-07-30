@@ -1,3 +1,5 @@
 /target
 /lua-language-server-binaries
 /garrysmod-library
+
+*.wasm
