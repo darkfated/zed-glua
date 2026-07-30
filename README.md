@@ -1,11 +1,12 @@
 # zed-glua
 
-A [Zed](https://zed.dev/) extension that adds **GLua support** (Lua +
-[Garry's Mod API](https://wiki.facepunch.com/gmod)).
+A [Zed](https://zed.dev/) extension that adds **GLua support** (Lua + [Garry's Mod API](https://wiki.facepunch.com/gmod)).
 
-## ✈️ Installation
+## 📦 Installation
 
-To install zed-glua, you can use the extension menu in Zed, or clone the repository and install it as a dev extension with `zed: install dev extension`.
+To install zed-glua, you can use the **Extension menu** in Zed, or clone the repository and install it as a dev extension with `zed: install dev extension`.
+
+https://github.com/user-attachments/assets/a8f1becb-a7f3-4b63-998a-a5239c2e6286
 
 ## 🔧 Configuration
 
@@ -40,17 +41,23 @@ This extension can be configured via your Zed `settings.json`. The default confi
 }
 ```
 
-**The language may conflict with the default Lua language configuration**. To resolve this issue, set GLua as the default language for `*.lua` files:
+## Common Issues
+
+1. **Files are opened as Lua instead of GLua**
+
+Zed may not automatically recognize `.lua` files as GLua, which prevents the extension from working. To fix this, open your Settings and add the following configuration:
 
 ```jsonc
 "file_types": {
-    "GLua": [
-        "lua"
-    ]
+    "GLua": ["lua"]
 }
 ```
 
-## 🧪 Testing
+2. **Extension doesn't work**
+
+After installing the extension, the language server and API definitions may not load until you restart Zed.
+
+## 🧪 Development
 
 Build the extension:
 
