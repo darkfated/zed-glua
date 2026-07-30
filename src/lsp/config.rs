@@ -60,6 +60,7 @@ fn apply_completion_config(lua: &mut Map<String, Value>) {
     completion.entry("callSnippet".to_string()).or_insert_with(|| Value::String("Replace".into()));
     completion.entry("showParams".to_string()).or_insert_with(|| Value::Bool(true));
     completion.entry("postfix".to_string()).or_insert_with(|| Value::String("@".into()));
+    completion.entry("workspaceWord".to_string()).or_insert_with(|| Value::Bool(true));
 }
 
 fn apply_hover_config(lua: &mut Map<String, Value>) {
@@ -68,6 +69,7 @@ fn apply_hover_config(lua: &mut Map<String, Value>) {
     hover.entry("viewNumber".to_string()).or_insert_with(|| Value::Bool(true));
     hover.entry("fieldInHover".to_string()).or_insert_with(|| Value::Bool(true));
     hover.entry("preview".to_string()).or_insert_with(|| Value::Bool(true));
+    hover.entry("previewFields".to_string()).or_insert_with(|| Value::Number(50.into()));
 }
 
 fn apply_hints_config(lua: &mut Map<String, Value>) {
@@ -77,6 +79,8 @@ fn apply_hints_config(lua: &mut Map<String, Value>) {
     hints.entry("paramType".to_string()).or_insert_with(|| Value::Bool(true));
     hints.entry("returnType".to_string()).or_insert_with(|| Value::Bool(true));
     hints.entry("enumEnumValues".to_string()).or_insert_with(|| Value::Bool(true));
+    hints.entry("setType".to_string()).or_insert_with(|| Value::Bool(true));
+    hints.entry("arrayIndex".to_string()).or_insert_with(|| Value::String("Auto".into()));
 }
 
 fn apply_misc_config(lua: &mut Map<String, Value>) {
@@ -89,9 +93,17 @@ fn apply_misc_config(lua: &mut Map<String, Value>) {
     let signature = json::get_or_insert_object(lua, "signatureHelp");
     signature.entry("enable".to_string()).or_insert_with(|| Value::Bool(true));
 
+    let code_lens = json::get_or_insert_object(lua, "codeLens");
+    code_lens.entry("enable".to_string()).or_insert_with(|| Value::Bool(true));
+
+    let type_config = json::get_or_insert_object(lua, "type");
+    type_config.entry("checkTableShape".to_string()).or_insert_with(|| Value::Bool(true));
+    type_config.entry("inferParamType".to_string()).or_insert_with(|| Value::Bool(true));
+
     let workspace = json::get_or_insert_object(lua, "workspace");
     workspace.entry("checkThirdParty".to_string()).or_insert_with(|| Value::Bool(false));
     workspace.entry("library".to_string()).or_insert_with(|| Value::Array(Vec::new()));
+    workspace.entry("preloadFileSize".to_string()).or_insert_with(|| Value::Number(1024.into()));
 }
 
 pub fn apply_gmod_lua_defaults(lua: &mut Map<String, Value>) {
