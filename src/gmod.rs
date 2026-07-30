@@ -6,7 +6,7 @@ const GMOD_API_REPO: &str = "luttje/glua-api-snippets";
 pub const LIBRARY_DIR: &str = "garrysmod-library";
 
 fn is_dir(path: impl AsRef<Path>) -> bool {
-    fs::metadata(path).is_ok_and(|stat| stat.is_dir())
+    path.as_ref().is_dir()
 }
 
 fn has_lua_files(path: impl AsRef<Path>) -> bool {
@@ -44,34 +44,46 @@ fn set_library_version(path: &Path, version: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn download_library(library_path: &Path, version: &str) -> Result<()> {
-    let release = zed::latest_github_release(
-        GMOD_API_REPO,
-        zed::GithubReleaseOptions {
-            require_assets: true,
-            pre_release: false,
-        },
-    )?;
+fn is_valid_library(path: &Path) -> bool {
+    is_dir(path) && has_lua_files(path)
+}
 
+pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result<()> {
     let asset = release
         .assets
         .iter()
         .find(|asset| asset.name.ends_with(".lua.zip"))
         .ok_or_else(|| "no .lua.zip asset found in latest glua-api-snippets release".to_string())?;
 
+    let temp_path = library_path.with_extension("tmp");
+
+    if is_dir(&temp_path) {
+        fs::remove_dir_all(&temp_path)
+            .map_err(|e| format!("failed to remove temporary library: {e}"))?;
+    }
+
+    zed::download_file(
+        &asset.download_url,
+        temp_path.to_string_lossy().as_ref(),
+        zed::DownloadedFileType::Zip,
+    )
+    .map_err(|e| format!("failed to download GMod API library: {e}"))?;
+
+    if !is_valid_library(&temp_path) {
+        let _ = fs::remove_dir_all(&temp_path);
+
+        return Err("downloaded GMod API library is invalid or contains no lua files".into());
+    }
+
     if is_dir(library_path) {
         fs::remove_dir_all(library_path)
             .map_err(|e| format!("failed to remove old GMod library: {e}"))?;
     }
 
-    zed::download_file(
-        &asset.download_url,
-        library_path.to_string_lossy().as_ref(),
-        zed::DownloadedFileType::Zip,
-    )
-    .map_err(|e| format!("failed to download GMod API library: {e}"))?;
+    fs::rename(&temp_path, library_path)
+        .map_err(|e| format!("failed to replace GMod library: {e}"))?;
 
-    set_library_version(library_path, version)?;
+    set_library_version(library_path, &release.version)?;
 
     Ok(())
 }
@@ -84,25 +96,35 @@ pub fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
             .map_err(|e| format!("failed to remove old GMod library: {e}"))?;
     }
 
-    let release = zed::latest_github_release(
+    let release = match zed::latest_github_release(
         GMOD_API_REPO,
         zed::GithubReleaseOptions {
             require_assets: true,
             pre_release: false,
         },
-    )?;
+    ) {
+        Ok(release) => release,
+
+        Err(error) => {
+            if is_valid_library(&library_path) {
+                return Ok(library_path.to_string_lossy().into_owned());
+            }
+
+            return Err(format!("failed to fetch latest GMod API release: {error}"));
+        }
+    };
 
     let current_version = get_library_version(&library_path);
 
     let needs_update =
-        !has_lua_files(&library_path) || current_version.as_deref() != Some(&release.version);
+        !is_valid_library(&library_path) || current_version.as_deref() != Some(&release.version);
 
     if needs_update {
-        download_library(&library_path, &release.version)?;
+        download_library(&library_path, &release)?;
     }
 
-    if !has_lua_files(&library_path) {
-        return Err("GMod API library download succeeded but no .lua files were found".into());
+    if !is_valid_library(&library_path) {
+        return Err("GMod API library download succeeded but validation failed".into());
     }
 
     Ok(library_path.to_string_lossy().into_owned())
