@@ -1,75 +1,51 @@
-; Highlights query for EmmyLuaDoc
-; Comment Prefix
+; Comment prefix
 (comment_prefix) @comment
 
-; Annotation Keywords
-"@class" @keyword
+; -- Annotation keywords --
 
-"@interface" @keyword
+; Core annotations
+(class_annotation "@" @keyword) @type.definition
+(field_annotation "@" @keyword)
+(type_annotation "@" @keyword)
+(param_annotation "@" @keyword)
+(return_annotation "@" @keyword)
+(generic_annotation "@" @keyword)
+(overload_annotation "@" @keyword)
+(deprecated_annotation "@" @keyword)
+(see_annotation "@" @keyword)
+(alias_annotation "@" @keyword) @type.definition
+(enum_annotation "@" @keyword) @type.definition
+(module_annotation "@" @keyword)
+(cast_annotation "@" @keyword)
+(operator_annotation "@" @keyword)
+(namespace_annotation "@" @keyword)
+(using_annotation "@" @keyword)
+(attribute_annotation "@" @keyword)
 
-"@field" @keyword
+; Visibility annotations
+(private_annotation "@" @keyword.modifier)
+(protected_annotation "@" @keyword.modifier)
+(public_annotation "@" @keyword.modifier)
+(package_annotation "@" @keyword.modifier)
 
-"@type" @keyword
+; Modifier annotations
+(async_annotation "@" @keyword)
+(nodiscard_annotation "@" @keyword)
+(meta_annotation "@" @keyword)
+(readonly_annotation "@" @keyword)
+(export_annotation "@" @keyword)
 
-"@param" @keyword
+; Directive annotations
+(diagnostic_annotation "@" @keyword.directive)
+(source_annotation "@" @keyword)
+(version_annotation "@" @keyword)
+(language_annotation "@" @keyword)
+(as_annotation "@" @keyword)
 
-"@return" @keyword
-
-"@generic" @keyword
-
-"@overload" @keyword
-
-"@see" @keyword
-
-"@alias" @keyword
-
-"@enum" @keyword
-
-"@module" @keyword
-
-"@cast" @keyword
-
-"@version" @keyword
-
-"@diagnostic" @keyword
-
-"@operator" @keyword
-
-"@namespace" @keyword
-
-"@using" @keyword
-
-"@language" @keyword
-
-"@attribute" @keyword
-
-"@as" @keyword
-
-; Other/unknown annotations
+; Unknown annotations
 (tag_name) @keyword
 
-; Special annotation nodes
-(deprecated_annotation) @keyword
-
-(private_annotation) @keyword
-
-(protected_annotation) @keyword
-
-(public_annotation) @keyword
-
-(package_annotation) @keyword
-
-(async_annotation) @keyword
-
-(nodiscard_annotation) @keyword
-
-(meta_annotation) @keyword
-
-(readonly_annotation) @keyword
-
-(export_annotation) @keyword
-
-; Visibility modifiers
+; -- Visibility modifiers --
 [
   "public"
   "private"
@@ -77,7 +53,7 @@
   "package"
 ] @keyword.modifier
 
-; Type keywords
+; -- Type keywords --
 [
   "fun"
   "async"
@@ -90,23 +66,18 @@
   "or"
 ] @keyword.type
 
-; Identifiers
+; -- Identifiers --
 (identifier) @variable
 
-; Types
-(basic_type
-  (identifier) @type)
-
-; Built-in types
+; -- Built-in types --
 ((identifier) @type.builtin
   (#match? @type.builtin
     "^(string|number|integer|boolean|table|function|thread|userdata|nil|any|unknown|self)$"))
 
-; Class definitions
+; -- Class definitions --
 (class_annotation
   name: (identifier) @type.definition)
 
-; Class parent types
 (class_annotation
   parent: (type_list
     (type
@@ -114,7 +85,6 @@
         (basic_type
           (identifier) @type)))))
 
-; Class modifiers
 (class_annotation
   [
     "exact"
@@ -122,38 +92,71 @@
     "constructor"
   ] @keyword.modifier)
 
-; Fields and Parameters
+; -- Fields and parameters --
 (field_annotation
   name: (field_name) @variable.member)
+
+(field_annotation
+  visibility: [
+    "public"
+    "private"
+    "protected"
+    "package"
+  ] @keyword.modifier)
 
 (param_annotation
   name: (param_name) @variable.parameter)
 
+(param_annotation
+  type: (type_annotation_value) @type)
+
+(param_annotation
+  description: (description) @comment)
+
 (param_def
   name: (identifier) @variable.parameter)
 
-; Generics
+(param_def
+  type: (type) @type)
+
+; -- Return annotations --
+(return_annotation
+  type: (return_type_annotation) @type)
+
+(return_annotation
+  description: (description) @comment)
+
+; -- Generics --
 (generic_annotation
   name: (identifier) @type.parameter)
+
+(generic_annotation
+  constraint: (type_annotation_value) @type)
 
 (generic_type
   base: (identifier) @type)
 
+(generic_type
+  params: (generic_params_types
+    (type) @type))
+
 (generic_params
   params: (identifier) @type.parameter)
 
-; Aliases and Enums
+; -- Aliases and enums --
 (alias_annotation
   name: (identifier) @type.definition)
 
+(alias_annotation
+  type: (type_annotation_value) @type)
+
 (enum_annotation
   name: (identifier) @type.definition)
 
-; Enum modifiers
 (enum_annotation
   "key" @keyword.modifier)
 
-; Operators
+; -- Operators --
 [
   "call"
   "add"
@@ -177,37 +180,34 @@
   "index"
 ] @operator
 
-; Literals
+; -- Literals --
 (string) @string
-
 (number) @number
-
 (boolean) @boolean
-
 "nil" @constant.builtin
 
-; Template types
+; -- Template types --
 (template_chars) @string
+(template_substitution
+  "${" @punctuation.bracket
+  type: (type) @type
+  "}" @punctuation.bracket)
 
-; Text line (documentation text)
+; -- Description text --
 (text_line) @comment
-
-; Description
 (description) @comment
+(continuation_description) @comment
 
-; Other annotation description (highlight differently for visibility)
 (other_annotation
   description: (description) @string.documentation)
 
-; Continuation description
-(continuation_description) @comment
-
-; Punctuation
+; -- Punctuation --
 [
   ":"
   "|"
   ","
   "?"
+  "&"
 ] @punctuation.delimiter
 
 [
@@ -221,19 +221,40 @@
   "}"
 ] @punctuation.bracket
 
-; Function type
+; -- Function type --
+(function_type
+  "async" @keyword)
 (function_type
   "fun" @keyword.function)
+(function_type
+  params: (param_list
+    (param_def
+      name: (identifier) @variable.parameter
+      type: (type) @type)))
+(function_type
+  return: (type_list
+    (type) @type))
 
-; Table type
+; -- Table type --
 (table_type
   "table" @type.builtin)
+(table_type
+  key: (type) @type)
+(table_type
+  value: (type) @type)
 
-; Table fields
+; -- Table fields --
 (table_field
   name: (identifier) @property)
+(table_field
+  type: (type_list
+    (type) @type))
 
-; Diagnostic actions
+; -- Array type --
+(array_type
+  element: (primary_type) @type)
+
+; -- Diagnostic --
 (diagnostic_annotation
   action: [
     "disable"
@@ -245,18 +266,25 @@
 (diagnostic_list
   (identifier) @constant)
 
-; Attributes
+; -- Attributes --
+(attribute_use
+  "@" @punctuation.bracket)
+
 (attribute_use_item
   name: (identifier) @function.macro)
+
+(attribute_use_item
+  args: (attribute_args
+    (attribute_arg) @variable))
 
 (attribute_annotation
   name: (identifier) @function.macro)
 
-; Module names
+; -- Module --
 (module_annotation
   name: (string) @module)
 
-; Version
+; -- Version --
 (version_annotation
   version: [
     (identifier) @constant
@@ -264,21 +292,76 @@
     (version_range) @constant
   ])
 
-; See references
+; -- See references --
 (see_annotation
   reference: (identifier) @variable)
 
-; Namespace
+; -- Namespace --
 (namespace_annotation
   name: (identifier) @namespace)
 
-; Using
+; -- Using --
 (using_annotation
   path: [
     (identifier) @namespace
     (string) @string
   ])
 
-; Language
+; -- Language --
 (language_annotation
   language: (identifier) @constant)
+
+; -- Cast --
+(cast_annotation
+  name: (identifier) @variable)
+(cast_annotation
+  type: (type_annotation_value) @type)
+
+; -- Source --
+(source_annotation
+  source: (string) @string)
+
+; -- As --
+(as_annotation
+  type: (type_annotation_value) @type)
+
+; -- Other annotation tag --
+(other_annotation
+  tag: (tag_name) @keyword)
+
+; -- Binary types --
+(binary_type
+  left: (primary_type) @type)
+(binary_type
+  op: ["&" "extends" "in"] @keyword.type)
+(binary_type
+  right: (primary_type) @type)
+
+; -- Unary types --
+(unary_type
+  op: ["keyof" "typeof"] @keyword.type)
+(unary_type
+  argument: (primary_type) @type)
+
+; -- Conditional type --
+(conditional_type
+  condition: (type) @type)
+(conditional_type
+  true_type: (type) @type)
+(conditional_type
+  false_type: (type) @type)
+
+; -- Parenthesized type --
+(parenthesized_type
+  "(" @punctuation.bracket
+  (type_list
+    (type) @type)
+  ")" @punctuation.bracket)
+
+; -- Tuple type --
+(tuple_type
+  "[" @punctuation.bracket
+  (tuple_elements
+    (type_list
+      (type) @type))
+  "]" @punctuation.bracket)
