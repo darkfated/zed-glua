@@ -1,9 +1,14 @@
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use zed_extension_api::{self as zed, Result};
 
 const GMOD_API_REPO: &str = "luttje/glua-api-snippets";
 pub const LIBRARY_DIR: &str = "garrysmod-library";
+
+const RELEASE_FILE: &str = "release.json";
+const RELEASE_CHECK_INTERVAL: u64 = 60 * 60 * 24;
 
 fn is_dir(path: impl AsRef<Path>) -> bool {
     path.as_ref().is_dir()
@@ -27,25 +32,48 @@ fn has_lua_files(path: impl AsRef<Path>) -> bool {
     false
 }
 
-fn get_library_version(path: &Path) -> Option<String> {
-    let version_file = path.join(".version");
-
-    fs::read_to_string(version_file)
-        .ok()
-        .map(|version| version.trim().to_string())
+fn is_valid_library(path: &Path) -> bool {
+    is_dir(path) && has_lua_files(path)
 }
 
-fn set_library_version(path: &Path, version: &str) -> Result<()> {
-    let version_file = path.join(".version");
+#[derive(Debug, Serialize, Deserialize)]
+struct ReleaseCache {
+    version: String,
+    checked: u64,
+}
 
-    fs::write(version_file, version)
-        .map_err(|e| format!("failed to write library version: {e}"))?;
+fn current_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+
+fn read_release_cache(path: &Path) -> Option<ReleaseCache> {
+    let file = path.join(RELEASE_FILE);
+
+    let content = fs::read_to_string(file).ok()?;
+
+    serde_json::from_str(&content).ok()
+}
+
+fn write_release_cache(path: &Path, release: &zed::GithubRelease) -> Result<()> {
+    let cache = ReleaseCache {
+        version: release.version.clone(),
+        checked: current_timestamp(),
+    };
+
+    let content = serde_json::to_string_pretty(&cache)
+        .map_err(|e| format!("failed to serialize release cache: {e}"))?;
+
+    fs::write(path.join(RELEASE_FILE), content)
+        .map_err(|e| format!("failed to write release cache: {e}"))?;
 
     Ok(())
 }
 
-fn is_valid_library(path: &Path) -> bool {
-    is_dir(path) && has_lua_files(path)
+fn release_check_expired(cache: &ReleaseCache) -> bool {
+    current_timestamp().saturating_sub(cache.checked) >= RELEASE_CHECK_INTERVAL
 }
 
 pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result<()> {
@@ -59,7 +87,7 @@ pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Re
 
     if is_dir(&temp_path) {
         fs::remove_dir_all(&temp_path)
-            .map_err(|e| format!("failed to remove temporary library: {e}"))?;
+            .map_err(|e| format!("failed to remove temp library: {e}"))?;
     }
 
     zed::download_file(
@@ -72,18 +100,17 @@ pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Re
     if !is_valid_library(&temp_path) {
         let _ = fs::remove_dir_all(&temp_path);
 
-        return Err("downloaded GMod API library is invalid or contains no lua files".into());
+        return Err("downloaded GMod API library validation failed".into());
     }
 
     if is_dir(library_path) {
         fs::remove_dir_all(library_path)
-            .map_err(|e| format!("failed to remove old GMod library: {e}"))?;
+            .map_err(|e| format!("failed to remove old library: {e}"))?;
     }
 
-    fs::rename(&temp_path, library_path)
-        .map_err(|e| format!("failed to replace GMod library: {e}"))?;
+    fs::rename(&temp_path, library_path).map_err(|e| format!("failed to replace library: {e}"))?;
 
-    set_library_version(library_path, &release.version)?;
+    write_release_cache(library_path, release)?;
 
     Ok(())
 }
@@ -91,40 +118,49 @@ pub fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Re
 pub fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
     let library_path = Path::new(current_dir).join(LIBRARY_DIR);
 
-    if refresh && is_dir(&library_path) {
-        fs::remove_dir_all(&library_path)
-            .map_err(|e| format!("failed to remove old GMod library: {e}"))?;
-    }
+    let cache = read_release_cache(&library_path);
 
-    let release = match zed::latest_github_release(
-        GMOD_API_REPO,
-        zed::GithubReleaseOptions {
-            require_assets: true,
-            pre_release: false,
-        },
-    ) {
-        Ok(release) => release,
+    let need_check_release = refresh || cache.as_ref().is_none_or(release_check_expired);
 
-        Err(error) => {
-            if is_valid_library(&library_path) {
-                return Ok(library_path.to_string_lossy().into_owned());
+    let release = if need_check_release {
+        match zed::latest_github_release(
+            GMOD_API_REPO,
+            zed::GithubReleaseOptions {
+                require_assets: true,
+                pre_release: false,
+            },
+        ) {
+            Ok(release) => Some(release),
+
+            Err(error) => {
+                if is_valid_library(&library_path) {
+                    return Ok(library_path.to_string_lossy().into_owned());
+                }
+
+                return Err(format!("failed to check GMod API release: {error}"));
             }
-
-            return Err(format!("failed to fetch latest GMod API release: {error}"));
         }
+    } else {
+        None
     };
 
-    let current_version = get_library_version(&library_path);
+    let needs_update = match &release {
+        Some(release) => cache
+            .as_ref()
+            .map(|cache| cache.version != release.version)
+            .unwrap_or(true),
 
-    let needs_update =
-        !is_valid_library(&library_path) || current_version.as_deref() != Some(&release.version);
+        None => !is_valid_library(&library_path),
+    };
 
     if needs_update {
-        download_library(&library_path, &release)?;
+        if let Some(release) = release {
+            download_library(&library_path, &release)?;
+        }
     }
 
     if !is_valid_library(&library_path) {
-        return Err("GMod API library download succeeded but validation failed".into());
+        return Err("GMod API library is missing or invalid".into());
     }
 
     Ok(library_path.to_string_lossy().into_owned())
