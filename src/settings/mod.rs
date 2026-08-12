@@ -71,7 +71,13 @@ fn normalize_settings_shape(mut settings_val: Value) -> Result<Value> {
     let lua_settings = settings.remove("Lua");
     let ext_settings = settings.remove("ext");
 
-    let mut normalized = ext_settings.unwrap_or(settings_val);
+    let mut normalized = match ext_settings {
+        Some(Value::Object(obj)) => Value::Object(obj),
+        Some(_) => {
+            return Err("invalid lua-language-server settings: `ext` must be an object".into());
+        }
+        None => settings_val,
+    };
 
     if let Value::Object(ref mut obj) = normalized {
         obj.insert(
