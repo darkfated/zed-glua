@@ -71,6 +71,27 @@ fn release_check_expired(cache: &ReleaseCache) -> bool {
     current_timestamp().saturating_sub(cache.checked) >= RELEASE_CHECK_INTERVAL_SECS
 }
 
+fn swap_in_library(temp_path: &Path, library_path: &Path) -> Result<()> {
+    let backup_path = library_path.with_extension("old");
+    let had_library = fs::is_dir(library_path.to_string_lossy().as_ref());
+
+    if had_library {
+        std_fs::rename(library_path, &backup_path)
+            .map_err(|e| format!("failed to move old library aside: {e}"))?;
+    }
+
+    if let Err(error) = std_fs::rename(temp_path, library_path) {
+        if had_library {
+            let _ = std_fs::rename(&backup_path, library_path);
+        }
+        return Err(format!("failed to replace library: {error}"));
+    }
+
+    let _ = std_fs::remove_dir_all(backup_path);
+
+    Ok(())
+}
+
 fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result<()> {
     let asset = release
         .assets
@@ -97,13 +118,7 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
         return Err("downloaded GMod API library validation failed".into());
     }
 
-    if fs::is_dir(library_path.to_string_lossy().as_ref()) {
-        std_fs::remove_dir_all(library_path)
-            .map_err(|e| format!("failed to remove old library: {e}"))?;
-    }
-
-    std_fs::rename(&temp_path, library_path)
-        .map_err(|e| format!("failed to replace library: {e}"))?;
+    swap_in_library(&temp_path, library_path)?;
 
     write_release_cache(library_path, release)?;
 
