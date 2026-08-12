@@ -1,35 +1,31 @@
 # zed-glua
 
-A [Zed](https://zed.dev/) extension that adds **GLua support** (Lua + [Garry's Mod API](https://wiki.facepunch.com/gmod)).
-
-## 🍷 Features
-
-- **Auto Complete** - type `play` and you already see `player.GetAll()`, `player.GetByID()`.
-- **Go to Definition** - click on a function and jump to its declaration.
-- **Find References** - on a hovered function, select the option and see every place it was called.
-- **Rename Symbol** - rename a variable and it changes everywhere in the project.
-- **Hover** - hover over a text object and get all available information about it.
-- **Diagnostics** - errors and warnings right in the code, such as unknown variables and unused function fields.
-- **Auto-detect Addon API** - adds global variables from your addon into a unified knowledge base, so you can use functions and variables from other addons.
-- **Syntax Highlighting** - full Lua highlighting plus 200+ variables from Garry's Mod.
-- **Code Outline** - on a separate panel, see all functions and variables with their nesting level.
-- **EmmyLua Doc** - annotations and type definitions, similar to TypeScript, for convenient documentation.
-- **Data Transparency** - on hover, display constant variable values and their types.
-- **Auto-Format** - excellent formatting on save thanks to EmmyLuaCodeStyle.
-- **And many other improvements.**
+This Zed extension provides **GLua support** by configuring [Lua Language Server](https://github.com/LuaLS/lua-language-server) with the automatically downloaded [Garry's Mod API](https://github.com/luttje/glua-api-snippets).
 
 ## 📦 Installation
 
-To install zed-glua, you can clone the repository and install it as a dev extension with `zed: install dev extension` (Ctrl+Shift+P).
+To install the extension, clone this repository and install it as a dev extension using `zed: install dev extension` (Ctrl+Shift+P).
 
 https://github.com/user-attachments/assets/a8f1becb-a7f3-4b63-998a-a5239c2e6286
 
 > [!WARNING]
-> Requires a Rust toolchain installed.
+> **Rust** and **Visual Studio** with the required C++ components are required to load the extension.
+>
+> **Visual Studio:**
+>
+> ```powershell
+> winget install --id Microsoft.VisualStudio.2022.Community --source winget --force --override "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --addProductLang En-us"
+> ```
+>
+> **Rust:**
+>
+> ```powershell
+> winget install Rustlang.Rustup
+> ```
 
 ## 🔧 Configuration
 
-This extension can be configured via your Zed `settings.json`. The default configuration looks like this:
+This extension can be configured via your Zed `settings.json`. The default configuration:
 
 ```jsonc
 "lsp": {
@@ -63,11 +59,13 @@ This extension can be configured via your Zed `settings.json`. The default confi
 }
 ```
 
-## Common Issues
+## Issues
 
-1. **Files are opened as Lua instead of GLua**
+1. **Files are opened as Lua**
 
-Zed may not automatically recognize `.lua` files as GLua, which prevents the extension from working. To fix this, open your Settings and add the following configuration:
+If you have the standard Lua extension installed, it may conflict with the GLua extension and cause `.lua` files to be opened as Lua instead of GLua.
+
+To fix this, make GLua the default language for `.lua` files by adding the following configuration to your **Zed settings**:
 
 ```jsonc
 "file_types": {
@@ -77,16 +75,7 @@ Zed may not automatically recognize `.lua` files as GLua, which prevents the ext
 
 2. **Extension doesn't work**
 
-After installing the extension, the language server and API definitions may not load until you restart Zed.
-
-## 🧪 Development
-
-Build the extension:
-
-```sh
-cd zed-glua
-cargo build --release
-```
+After installing the extension, restart Zed if the language server or API definitions are not loaded.
 
 ## 🔐 License
 
