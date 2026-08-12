@@ -111,11 +111,11 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
         temp_path.to_string_lossy().as_ref(),
         zed::DownloadedFileType::Zip,
     )
-    .map_err(|e| format!("failed to download GMod API library: {e}"))?;
+    .map_err(|e| format!("failed to download Gmod API library: {e}"))?;
 
     if !is_valid_library(&temp_path) {
         let _ = std_fs::remove_dir_all(&temp_path);
-        return Err("downloaded GMod API library validation failed".into());
+        return Err("downloaded Gmod API library validation failed".into());
     }
 
     swap_in_library(&temp_path, library_path)?;
@@ -125,7 +125,11 @@ fn download_library(library_path: &Path, release: &zed::GithubRelease) -> Result
     Ok(())
 }
 
-fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
+fn ensure_library(
+    language_server_id: &zed::LanguageServerId,
+    current_dir: &str,
+    refresh: bool,
+) -> Result<String> {
     let library_path = Path::new(current_dir).join(LIBRARY_DIR);
 
     let cache = read_release_cache(&library_path);
@@ -145,7 +149,7 @@ fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
                 if is_valid_library(&library_path) {
                     return Ok(library_path.to_string_lossy().into_owned());
                 }
-                return Err(format!("failed to check GMod API release: {error}"));
+                return Err(format!("failed to check Gmod API release: {error}"));
             }
         }
     } else {
@@ -162,12 +166,23 @@ fn ensure_library(current_dir: &str, refresh: bool) -> Result<String> {
 
     if needs_update {
         if let Some(release) = release {
-            download_library(&library_path, &release)?;
+            if let Err(error) = download_library(&library_path, &release) {
+                if is_valid_library(&library_path) {
+                    zed::set_language_server_installation_status(
+                        language_server_id,
+                        &zed::LanguageServerInstallationStatus::Failed(format!(
+                            "failed to update Gmod API library: {error}; using cached version"
+                        )),
+                    );
+                    return Ok(library_path.to_string_lossy().into_owned());
+                }
+                return Err(format!("failed to download Gmod API library: {error}"));
+            }
         }
     }
 
     if !is_valid_library(&library_path) {
-        return Err("GMod API library is missing or invalid".into());
+        return Err("Gmod API library is missing or invalid".into());
     }
 
     Ok(library_path.to_string_lossy().into_owned())
@@ -188,7 +203,11 @@ impl GmodLibrary {
         Self { cached_path: None }
     }
 
-    pub fn resolve(&mut self, settings: &Settings) -> Result<Option<String>> {
+    pub fn resolve(
+        &mut self,
+        language_server_id: &zed::LanguageServerId,
+        settings: &Settings,
+    ) -> Result<Option<String>> {
         if !settings.gmod.enabled {
             return Ok(None);
         }
@@ -211,7 +230,7 @@ impl GmodLibrary {
             .map_err(|e| format!("failed to get extension working directory: {e}"))?;
         let current_dir_str = current_dir.display().to_string();
 
-        let library_path = ensure_library(&current_dir_str, settings.gmod.refresh_library)?;
+        let library_path = ensure_library(language_server_id, &current_dir_str, settings.gmod.refresh_library)?;
 
         self.cached_path = Some(library_path.clone());
         Ok(Some(library_path))

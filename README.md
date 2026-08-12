@@ -33,7 +33,7 @@ This extension can be configured via your Zed `settings.json`. The default confi
     "lua-language-server": {
         "settings": {
             "gmod": {
-                // Enable GMod support.
+                // Enable Gmod support.
                 "enabled": true,
                 "download_library": true,
                 // Check for API updates on startup. If disabled, check
@@ -42,7 +42,7 @@ This extension can be configured via your Zed `settings.json`. The default confi
                 // Custom path to the API library, if a specific save location
                 // is required.
                 "library_path": null,
-                // Auto-detect GMod addon directory structure
+                // Auto-detect Gmod addon directory structure
                 // (lua/autorun/, lua/entities/, etc.)
                 "auto_detect_addon": true,
             },

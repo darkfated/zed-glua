@@ -42,7 +42,7 @@ impl zed::Extension for GluaExtension {
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
             );
-            self.gmod_library.resolve(&settings)?;
+            self.gmod_library.resolve(language_server_id, &settings)?;
         }
 
         let binary_path =
@@ -81,7 +81,7 @@ impl zed::Extension for GluaExtension {
         let proj_root = worktree.root_path();
         let mut library_paths = Vec::with_capacity(settings.library.len() + 10);
 
-        if let Some(path) = self.gmod_library.resolve(&settings)? {
+        if let Some(path) = self.gmod_library.resolve(language_server_id, &settings)? {
             library_paths.push(path);
         }
 
