@@ -119,6 +119,20 @@ impl LuaLsBinary {
         }
 
         if !fs::is_file(&binary_path) {
+            let tmp_dir = format!("{version_dir}.tmp");
+
+            if fs::is_dir(&version_dir) {
+                std_fs::remove_dir_all(&version_dir).map_err(|e| {
+                    format!("failed to remove incomplete lua-language-server install: {e}")
+                })?;
+            }
+
+            if fs::is_dir(&tmp_dir) {
+                std_fs::remove_dir_all(&tmp_dir).map_err(|e| {
+                    format!("failed to remove stale lua-language-server download: {e}")
+                })?;
+            }
+
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
@@ -126,13 +140,17 @@ impl LuaLsBinary {
 
             zed::download_file(
                 &asset.download_url,
-                &version_dir,
+                &tmp_dir,
                 match platform {
                     zed::Os::Mac | zed::Os::Linux => zed::DownloadedFileType::GzipTar,
                     zed::Os::Windows => zed::DownloadedFileType::Zip,
                 },
             )
             .map_err(|e| format!("failed to download lua-language-server: {e}"))?;
+
+            std_fs::rename(&tmp_dir, &version_dir).map_err(|e| {
+                format!("failed to move downloaded lua-language-server into place: {e}")
+            })?;
 
             Self::prune_old_versions(&dir_name)?;
         }
@@ -145,12 +163,23 @@ impl LuaLsBinary {
         let entries = std_fs::read_dir(LUA_LS_BINARY_DIR)
             .map_err(|e| format!("failed to list lua-language-server binary directory: {e}"))?;
 
+        let keep_tmp = format!("{current_dir_name}.tmp");
+
         for entry in entries {
             let entry = entry
                 .map_err(|e| format!("failed to load lua-language-server binary entry: {e}"))?;
-            if entry.file_name().to_str() != Some(current_dir_name) {
-                let _ = std_fs::remove_dir_all(entry.path());
+
+            let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+                continue;
+            };
+            if !name.starts_with("lua-language-server-") {
+                continue;
             }
+            if name == current_dir_name || name == keep_tmp {
+                continue;
+            }
+
+            let _ = std_fs::remove_dir_all(entry.path());
         }
 
         Ok(())
