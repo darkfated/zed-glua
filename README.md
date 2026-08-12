@@ -20,9 +20,12 @@ A [Zed](https://zed.dev/) extension that adds **GLua support** (Lua + [Garry's M
 
 ## 📦 Installation
 
-To install zed-glua, you can use the **Extension menu** in Zed, or clone the repository and install it as a dev extension with `zed: install dev extension`.
+To install zed-glua, you can clone the repository and install it as a dev extension with `zed: install dev extension` (Ctrl+Shift+P).
 
 https://github.com/user-attachments/assets/a8f1becb-a7f3-4b63-998a-a5239c2e6286
+
+> [!WARNING]
+> Requires a Rust toolchain installed.
 
 ## 🔧 Configuration
 
