@@ -137,9 +137,29 @@
     "loadstring" "module" "next" "pairs" "pcall" "print" "rawequal" "rawget" "rawset" "require"
     "select" "setfenv" "setmetatable" "tonumber" "tostring" "type" "unpack" "xpcall"))
 
-; GMod/GLua specific built-in functions
+; Gmod specific built-in functions
 (function_call
   (identifier) @function.builtin
+  (#any-of? @function.builtin
+    ; Utilities
+    "HTTP" "include" "AddCSLuaFile" "IncludeCS" "CompileFile" "CompileString"
+    "RunString" "RunStringEx" "Msg" "MsgN" "MsgC" "MsgAll" "ErrorNoHalt"
+    "ErrorNoHaltWithStack" "PrintTable" "DeveloperMsg" "Print"
+    ; Ents
+    "Entity" "Player"
+    ; Color
+    "Color" "ColorAlpha" "HSVToColor" "ColorToHSV"
+    ; Gamemode
+    "GM" "GAMEMODE" "DerivedGamemode"
+    ; Particle
+    "PrecacheParticleSystem"
+    ; GUI
+    "DermaMenu" "Derma_StringRequest" "Derma_Message" "Derma_Query"
+    "Derma_Anim" "Derma_Highlight" "DFrame" "DPanel" "DButton"))
+
+; Gmod module built-in functions
+(function_call
+  name: (dot_index_expression) @function.builtin
   (#any-of? @function.builtin
     ; Filesystem
     "file.Exists" "file.IsDir" "file.Read" "file.Write" "file.Delete" "file.Rename"
@@ -147,27 +167,22 @@
     "file.CreateDir" "file.Decompress" "file.Walk" "file.IsBinary" "file.IsEmpty"
     "file.ReadStream" "file.WriteStream"
     ; HTTP
-    "HTTP" "http.Fetch" "http.Post" "http.Get" "http.Put"
-    ; Utilities
-    "include" "AddCSLuaFile" "IncludeCS" "CompileFile" "CompileString" "RunString"
-    "RunStringEx" "Msg" "MsgN" "MsgC" "MsgAll" "ErrorNoHalt" "ErrorNoHaltWithStack"
-    "PrintTable" "DeveloperMsg" "Print"
+    "http.Fetch" "http.Post" "http.Get" "http.Put"
     ; Entity
-    "Entity" "ents.FindByClass" "ents.FindInSphere" "ents.FindInBox"
+    "ents.FindByClass" "ents.FindInSphere" "ents.FindInBox"
     "ents.FindByModel" "ents.FindByName" "player.GetByID" "player.GetAll"
     ; Rendering
     "surface.CreateFont" "surface.SetFont" "surface.GetTextSize" "surface.SetTextPos"
-    "surface.SetDrawColor" "surface.DrawRect" "surface.DrawRect" "surface.DrawLine"
+    "surface.SetDrawColor" "surface.DrawRect" "surface.DrawLine"
     "surface.DrawCircle" "surface.DrawPoly" "surface.SetMaterial" "surface.SetTexture"
-    "surface.DrawTexturedRect" "draw.DrawText" "draw.RoundedBox" "draw.NoTexture"
+    "surface.DrawTexturedRect"
+    "draw.DrawText" "draw.RoundedBox" "draw.NoTexture"
     "cam.Start2D" "cam.End2D" "cam.Start3D" "cam.End3D"
     ; Math
     "math.Clamp" "math.Approach" "math.Round" "math.Rand" "math.randomseed"
     "math.Ceil" "math.Floor" "math.Remainder" "math.fmod" "math.Sign"
     "math.Lerp" "math.LerpAngle" "math.ApproachAngle" "math.NormalizeAngle"
     "math.AngleDifference" "math.SharedAngle" "math.ease"
-    ; Color
-    "Color" "ColorAlpha" "HSVToColor" "ColorToHSV"
     ; String
     "string.find" "string.gmatch" "string.gsub" "string.match" "string.reverse"
     "string.rep" "string.sub" "string.format" "string.byte" "string.char"
@@ -187,8 +202,6 @@
     "timer.Update" "timer.GetTable"
     ; Hook
     "hook.Add" "hook.Remove" "hook.Call" "hook.Run"
-    ; Gamemode
-    "GM" "GAMEMODE" "DerivedGamemode"
     ; Data
     "datastore.GetTable" "datastore.SetTable" "datastore.Get" "datastore.Set"
     "datastore.Exists" "datastore.Remove" "datastore.Save" "datastore.Load"
@@ -196,27 +209,22 @@
     "util.JSONToTable" "util.TableToJSON" "util.Decompress" "util.Compress"
     "util.CRC" "util.MD5" "util.SHA1" "util.CalculateMD5" "util.CalculateSHA1"
     ; Particle
-    "particle.Create" "particle.Emit" "PrecacheParticleSystem"
+    "particle.Create" "particle.Emit"
     ; Sound
-    "surface.PlaySound" "sound.PlayFile" "sound.PlayURL" "LocalPlayer():EmitSound"
+    "surface.PlaySound" "sound.PlayFile" "sound.PlayURL"
     ; Network
     "net.Start" "net.Send" "net.Broadcast" "net.SendToServer" "net.Receive"
     "net.WriteUInt" "net.WriteInt" "net.WriteBool" "net.WriteFloat" "net.WriteString"
     "net.WriteBit" "net.WriteEntity" "net.WriteVector" "net.WriteAngle" "net.WriteColor"
-    "net.WriteTable" "net.WriteData" "net.WriteUInt" "net.WriteUInt64"
+    "net.WriteTable" "net.WriteData" "net.WriteUInt64"
     "net.ReadUInt" "net.ReadInt" "net.ReadBool" "net.ReadFloat" "net.ReadString"
     "net.ReadBit" "net.ReadEntity" "net.ReadVector" "net.ReadAngle" "net.ReadColor"
-    "net.ReadTable" "net.ReadData" "net.ReadUInt" "net.ReadUInt64"
-    "net.Start" "net.Send" "net.Broadcast" "net.SendToServer"
+    "net.ReadTable" "net.ReadData" "net.ReadUInt64"
     ; Usermessage (legacy)
     "umsg.Start" "umsg.End" "umsg.Short" "umsg.Long" "umsg.Float" "umsg.Char"
     "umsg.Bool" "umsg.String" "umsg.Entity" "umsg.Vector" "umsg.Angle" "umsg.UserMessage"
-    ; File
-    "file.Exists" "file.IsDir" "file.Read" "file.Write" "file.Delete" "file.Rename"
-    "file.Find" "file.Size" "file.Time" "file.TMod" "file.Open" "file.Append"
     ; Panel/GUI
-    "vgui.Create" "vgui.CreateX" "DermaMenu" "Derma_StringRequest" "Derma_Message"
-    "Derma_Query" "Derma_Anim" "Derma_Highlight" "DFrame" "DPanel" "DButton"
+    "vgui.Create" "vgui.CreateX"
     ; Render utilities
     "render.Clear" "render.ClearDepth" "render.SetScissorRect" "render.SetBlend"
     "render.SetColorModulation" "render.SetColorCorrection" "render.GetToneMappingScaleLinear"
@@ -235,7 +243,7 @@
     ; Debug
     "debug.getinfo" "debug.getlocal" "debug.setlocal" "debug.getupvalue"
     "debug.setupvalue" "debug.getregistry" "debug.getmetatable" "debug.setmetatable"
-    "debug.getfenv" "debug.setfenv" "debug traceback" "debug.getuservalue"
+    "debug.getfenv" "debug.setfenv" "debug.traceback" "debug.getuservalue"
     "debug.setuservalue" "debug.upvalueid" "debug.upvaluejoin"))
 
 ; Others
